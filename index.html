@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>FNF Psych Engine Chart Editor (1-file)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e1e;
+            color: #fff;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* サイドバー */
+        .sidebar {
+            width: 260px;
+            background: #2d2d2d;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 2px solid #444;
+            flex-shrink: 0;
+        }
+
+        .sidebar h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #ff6b6b;
+        }
+
+        .sidebar h2 {
+            font-size: 14px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #ffda77;
+            text-transform: uppercase;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 4px;
+            color: #aaa;
+            text-transform: uppercase;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #444;
+            background: #1e1e1e;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #ff6b6b;
+            background: #252525;
+        }
+
+        /* ボタン */
+        .btn {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 8px;
+            border: none;
+            background: #4a90e2;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #357abd;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-secondary {
+            background: #7f8c8d;
+        }
+
+        .btn-secondary:hover {
+            background: #5d6d7b;
+        }
+
+        .btn-small {
+            width: auto;
+            padding: 8px 12px;
+            margin: 0;
+        }
+
+        /* 統計情報 */
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #444;
+            font-size: 12px;
+        }
+
+        .stat-item strong {
+            color: #ffda77;
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        /* エディタコントロール */
+        .editor-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .editor-controls .btn {
+            width: auto;
+            padding: 8px 12px;
+            margin: 0;
+            flex-shrink: 0;
+        }
+
+        .timeline-slider {
+            flex: 1;
+            height: 6px;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #444;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .timeline-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #ff6b6b;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .timeline-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            background: #ff6b6b;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+
+        #timeDisplay {
+            font-size: 12px;
+            color: #aaa;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        /* オーディオコントロール */
+        .audio-controls {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .audio-controls input[type="file"] {
+            flex: 1;
+            padding: 8px;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #fff;
+        }
+
+        /* キャンバス */
+        #editorCanvas {
+            flex: 1;
+            background: #000;
+            border: 2px solid #444;
+            border-radius: 4px;
+            cursor: crosshair;
+            display: block;
+            width: 100%;
+            height: calc(100% - 80px);
+        }
+
+        /* スクロールバー */
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- サイドバー -->
+    <aside class="sidebar">
+        <h1>Chart Editor</h1>
+
+        <!-- 曲情報 -->
+        <section class="section">
+            <h2>曲情報</h2>
+            <div class="form-group">
+                <label for="songName">曲名</label>
+                <input type="text" id="songName" placeholder="TestSong" value="TestSong">
+            </div>
+            <div class="form-group">
+                <label for="bpmInput">BPM</label>
+                <input type="number" id="bpmInput" placeholder="150" value="150" min="1">
+            </div>
+        </section>
+
+        <!-- ノーツ操作 -->
+        <section class="section">
+            <h2>ノーツ操作</h2>
+            <div class="form-group">
+                <label for="laneSelect">レーン選択</label>
+                <select id="laneSelect">
+                    <option value="0">レーン 0 (赤)</option>
+                    <option value="1">レーン 1 (青)</option>
+                    <option value="2">レーン 2 (緑)</option>
+                    <option value="3">レーン 3 (黄)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="holdLength">長押し長さ (ms)</label>
+                <input type="number" id="holdLength" placeholder="0" value="0" min="0">
+            </div>
+            <button class="btn" id="addNoteBtn">ノーツを追加</button>
+            <button class="btn btn-danger" id="deleteNoteBtn">選択ノーツ削除</button>
+            <button class="btn btn-secondary" id="clearAllBtn">全削除</button>
+        </section>
+
+        <!-- ファイル操作 -->
+        <section class="section">
+            <h2>ファイル操作</h2>
+            <button class="btn" id="downloadBtn">JSON ダウンロード</button>
+            <button class="btn" id="uploadBtn">JSON 読込</button>
+            <input type="file" id="fileInput" accept=".json" style="display:none">
+        </section>
+
+        <!-- 統計情報 -->
+        <section class="section">
+            <h2>統計</h2>
+            <div class="stat-item">
+                <span>ノーツ数:</span>
+                <strong id="noteCount">0</strong>
+            </div>
+            <div class="stat-item">
+                <span>現在時刻:</span>
+                <strong id="currentTimeDisplay">0.00s</strong>
+            </div>
+            <div class="stat-item">
+                <span>選択ノーツ:</span>
+                <strong id="selectedNoteDisplay">なし</strong>
+            </div>
+        </section>
+    </aside>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <!-- コントロール -->
+        <div class="editor-controls">
+            <button class="btn btn-small" id="playBtn">▶ 再生</button>
+            <button class="btn btn-small" id="pauseBtn">⏸ 一時停止</button>
+            <button class="btn btn-small" id="stopBtn">⏹ 停止</button>
+            <input type="range" id="timelineSlider" min="0" max="100" value="0" class="timeline-slider">
+            <span id="timeDisplay">0:00 / 0:00</span>
+        </div>
+
+        <!-- オーディオプレイヤー -->
+        <div class="audio-controls">
+            <label for="audioInput">オーディオファイル:</label>
+            <input type="file" id="audioInput" accept="audio/*">
+        </div>
+
+        <!-- キャンバス -->
+        <canvas id="editorCanvas"></canvas>
+
+        <!-- オーディオ要素 -->
+        <audio id="audioPlayer"></audio>
+    </main>
+</div>
+
+<script>
+    // ===== グローバル状態管理 =====
+    const state = {
+        songName: 'TestSong',
+        bpm: 150,
+        notes: [],
+        selectedNoteIndex: null,
+        audioFile: null,
+        currentTime: 0,
+        duration: 0,
+        isPlaying: false,
+        pixelsPerMs: 0.2 // 1msあたりのピクセル数（縦スケール）
+    };
+
+    // ===== DOM要素 =====
+    const songNameInput = document.getElementById('songName');
+    const bpmInput = document.getElementById('bpmInput');
+    const laneSelect = document.getElementById('laneSelect');
+    const holdLengthInput = document.getElementById('holdLength');
+    const addNoteBtn = document.getElementById('addNoteBtn');
+    const deleteNoteBtn = document.getElementById('deleteNoteBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileInput = document.getElementById('fileInput');
+    const audioInput = document.getElementById('audioInput');
+
+    const audioPlayer = document.getElementById('audioPlayer');
+    const playBtn = document.getElementById('playBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const canvas = document.getElementById('editorCanvas');
+    const ctx = canvas.getContext('2d');
+    const timelineSlider = document.getElementById('timelineSlider');
+    const noteCountDisplay = document.getElementById('noteCount');
+    const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+    const selectedNoteDisplay = document.getElementById('selectedNoteDisplay');
+    const timeDisplay = document.getElementById('timeDisplay');
+
+    const laneColors = ['#ff6b6b', '#4a90e2', '#51cf66', '#ffd93d'];
+    const laneName = ['赤', '青', '緑', '黄'];
+
+    // ===== 初期化 =====
+    function init() {
+        resizeCanvas();
+        state.songName = songNameInput.value;
+        state.bpm = parseInt(bpmInput.value) || 150;
+        setupEventListeners();
+        updateDisplay();
+        startAnimationLoop();
+    }
+
+    function setupEventListeners() {
+        songNameInput.addEventListener('change', (e) => {
+            state.songName = e.target.value;
+        });
+
+        bpmInput.addEventListener('change', (e) => {
+            state.bpm = parseInt(e.target.value) || 150;
+        });
+
+        audioInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                audioPlayer.src = url;
+                state.audioFile = file;
+                audioPlayer.addEventListener('loadedmetadata', () => {
+                    state.duration = audioPlayer.duration * 1000;
+                    updateDisplay();
+                }, { once: true });
+            }
+        });
+
+        addNoteBtn.addEventListener('click', addNoteAtCurrentTime);
+        deleteNoteBtn.addEventListener('click', deleteSelectedNote);
+
+        clearAllBtn.addEventListener('click', () => {
+            if (confirm('全てのノーツを削除しますか？')) {
+                state.notes = [];
+                state.selectedNoteIndex = null;
+                updateDisplay();
+            }
+        });
+
+        playBtn.addEventListener('click', () => {
+            if (state.duration > 0) {
+                audioPlayer.play();
+                state.isPlaying = true;
+            }
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            audioPlayer.pause();
+            state.isPlaying = false;
+        });
+
+        stopBtn.addEventListener('click', () => {
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+            state.currentTime = 0;
+            state.isPlaying = false;
+            updateDisplay();
+        });
+
+        timelineSlider.addEventListener('input', (e) => {
+            if (state.duration > 0) {
+                const ratio = parseFloat(e.target.value) / 100;
+                state.currentTime = ratio * state.duration;
+                audioPlayer.currentTime = state.currentTime / 1000;
+                updateDisplay();
+            }
+        });
+
+        audioPlayer.addEventListener('timeupdate', () => {
+            state.currentTime = audioPlayer.currentTime * 1000;
+            state.isPlaying = !audioPlayer.paused;
+            updateDisplay();
+        });
+
+        audioPlayer.addEventListener('ended', () => {
+            state.isPlaying = false;
+        });
+
+        downloadBtn.addEventListener('click', downloadJSON);
+        uploadBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', uploadJSON);
+
+        canvas.addEventListener('click', canvasClickHandler);
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            draw();
+        });
+    }
+
+    // ===== ノーツ管理 =====
+    function addNoteAtCurrentTime() {
+        const lane = parseInt(laneSelect.value);
+        const holdLength = parseInt(holdLengthInput.value) || 0;
+
+        const note = {
+            time: state.currentTime,
+            lane: lane,
+            hold: holdLength
+        };
+
+        state.notes.push(note);
+        state.notes.sort((a, b) => a.time - b.time);
+        updateDisplay();
+    }
+
+    function deleteSelectedNote() {
+        if (state.selectedNoteIndex !== null) {
+            state.notes.splice(state.selectedNoteIndex, 1);
+            state.selectedNoteIndex = null;
+            updateDisplay();
+        } else {
+            alert('削除するノーツを選択してください');
+        }
+    }
+
+    // ===== キャンバスクリック =====
+    function canvasClickHandler(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const laneWidth = canvas.width / 4;
+        const lane = Math.floor(x / laneWidth);
+
+        const time = state.currentTime + (canvas.height / 2 - y) / state.pixelsPerMs;
+
+        const clickedIndex = findNoteAtPosition(x, y);
+        if (clickedIndex !== null) {
+            state.selectedNoteIndex = clickedIndex;
+        } else {
+            const note = {
+                time: Math.max(0, time),
+                lane: Math.min(3, Math.max(0, lane)),
+                hold: 0
+            };
+            state.notes.push(note);
+            state.notes.sort((a, b) => a.time - b.time);
+        }
+
+        updateDisplay();
+    }
+
+    function findNoteAtPosition(x, y) {
+        const laneWidth = canvas.width / 4;
+        const clickTolerance = 10;
+
+        for (let i = 0; i < state.notes.length; i++) {
+            const note = state.notes[i];
+            const noteX = note.lane * laneWidth + laneWidth / 2;
+            const noteY = canvas.height / 2 - (note.time - state.currentTime) * state.pixelsPerMs;
+
+            const dx = x - noteX;
+            const dy = y - noteY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < clickTolerance + 10) {
+                return i;
+            }
+        }
+        return null;
+    }
+
+    // ===== 描画 =====
+    function draw() {
+        const laneWidth = canvas.width / 4;
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // レーン区切り線
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        for (let i = 1; i < 4; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * laneWidth, 0);
+            ctx.lineTo(i * laneWidth, canvas.height);
+            ctx.stroke();
+        }
+
+        // タイムライン目盛り
+        ctx.strokeStyle = '#444';
+        ctx.fillStyle = '#666';
+        ctx.font = '10px monospace';
+        const beatMs = 60000 / state.bpm;
+
+        const visibleMs = canvas.height / state.pixelsPerMs;
+        const startTime = state.currentTime - visibleMs / 2;
+        const endTime = state.currentTime + visibleMs / 2;
+
+        const firstBeat = Math.floor(startTime / beatMs);
+        const lastBeat = Math.ceil(endTime / beatMs);
+
+        for (let beat = firstBeat; beat <= lastBeat; beat++) {
+            const beatTime = beat * beatMs;
+            const beatY = canvas.height / 2 - (beatTime - state.currentTime) * state.pixelsPerMs;
+
+            if (beatY >= 0 && beatY <= canvas.height) {
+                ctx.beginPath();
+                ctx.moveTo(0, beatY);
+                ctx.lineTo(canvas.width, beatY);
+                ctx.stroke();
+
+                if (beat % 4 === 0) {
+                    const seconds = beatTime / 1000;
+                    ctx.fillText(seconds.toFixed(1) + 's', 5, beatY - 5);
+                }
+            }
+        }
+
+        drawNotes();
+
+        // 現在時刻ライン
+        ctx.strokeStyle = '#ff6b6b';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height / 2);
+        ctx.lineTo(canvas.width, canvas.height / 2);
+        ctx.stroke();
+    }
+
+    function drawNotes() {
+        const laneWidth = canvas.width / 4;
+
+        for (let i = 0; i < state.notes.length; i++) {
+            const note = state.notes[i];
+            const isSelected = i === state.selectedNoteIndex;
+
+            const noteX = note.lane * laneWidth;
+            const noteY = canvas.height / 2 - (note.time - state.currentTime) * state.pixelsPerMs;
+
+            if (noteY < -50 || noteY > canvas.height + 50) continue;
+
+            ctx.fillStyle = isSelected ? '#ffffff' : laneColors[note.lane];
+            ctx.globalAlpha = isSelected ? 1 : 0.85;
+            ctx.fillRect(noteX + 5, noteY - 10, laneWidth - 10, 20);
+
+            if (note.hold > 0) {
+                const holdEndY = canvas.height / 2 - (note.time + note.hold - state.currentTime) * state.pixelsPerMs;
+                ctx.fillRect(noteX + laneWidth / 2 - 5, noteY, 10, holdEndY - noteY);
+            }
+
+            if (isSelected) {
+                ctx.strokeStyle = '#ffff00';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(noteX + 5, noteY - 10, laneWidth - 10, 20);
+            }
+
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    // ===== JSON 出力 =====
+    function downloadJSON() {
+        const jsonData = {
+            song: {
+                song: state.songName,
+                bpm: state.bpm,
+                notes: convertNotesToSections()
+            }
+        };
+
+        const jsonStr = JSON.stringify(jsonData, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${state.songName}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function convertNotesToSections() {
+        if (state.notes.length === 0) {
+            return [{ sectionNotes: [], mustHitSection: true }];
+        }
+
+        const beatMs = 60000 / state.bpm;
+        const sectionDuration = beatMs * 4;
+
+        const sections = [];
+        let currentSection = { sectionNotes: [], mustHitSection: true };
+        let currentSectionStartTime = 0;
+
+        for (const note of state.notes) {
+            const sectionIndex = Math.floor(note.time / sectionDuration);
+            const sectionStartTime = sectionIndex * sectionDuration;
+
+            while (currentSectionStartTime < sectionStartTime) {
+                sections.push(currentSection);
+                currentSectionStartTime += sectionDuration;
+                currentSection = { sectionNotes: [], mustHitSection: true };
+            }
+
+            currentSection.sectionNotes.push([
+                note.time - currentSectionStartTime,
+                note.lane,
+                note.hold
+            ]);
+        }
+
+        sections.push(currentSection);
+        return sections;
+    }
+
+    // ===== JSON 読込 =====
+    function uploadJSON(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const json = JSON.parse(event.target.result);
+                state.songName = json.song.song || 'TestSong';
+                state.bpm = json.song.bpm || 150;
+
+                state.notes = [];
+                const beatMs = 60000 / state.bpm;
+                const sectionDuration = beatMs * 4;
+
+                for (let sectionIndex = 0; sectionIndex < json.song.notes.length; sectionIndex++) {
+                    const section = json.song.notes[sectionIndex];
+                    const sectionStartTime = sectionIndex * sectionDuration;
+
+                    for (const noteData of section.sectionNotes) {
+                        const note = {
+                            time: sectionStartTime + noteData[0],
+                            lane: noteData[1],
+                            hold: noteData[2] || 0
+                        };
+                        state.notes.push(note);
+                    }
+                }
+
+                songNameInput.value = state.songName;
+                bpmInput.value = state.bpm;
+                state.selectedNoteIndex = null;
+                updateDisplay();
+            } catch (error) {
+                alert('JSON読込に失敗しました: ' + error.message);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // ===== UI更新 =====
+    function updateDisplay() {
+        noteCountDisplay.textContent = state.notes.length;
+        currentTimeDisplay.textContent = (state.currentTime / 1000).toFixed(2) + 's';
+
+        if (state.selectedNoteIndex !== null) {
+            const note = state.notes[state.selectedNoteIndex];
+            selectedNoteDisplay.textContent = `${laneName[note.lane]} @ ${note.time.toFixed(0)}ms`;
+        } else {
+            selectedNoteDisplay.textContent = 'なし';
+        }
+
+        if (state.duration > 0) {
+            const ratio = (state.currentTime / state.duration) * 100;
+            timelineSlider.value = ratio;
+        }
+
+        const minutes = Math.floor(state.currentTime / 60000);
+        const seconds = Math.floor((state.currentTime % 60000) / 1000);
+        const durationMinutes = Math.floor(state.duration / 60000);
+        const durationSeconds = Math.floor((state.duration % 60000) / 1000);
+        timeDisplay.textContent =
+            `${minutes}:${String(seconds).padStart(2, '0')} / ${durationMinutes}:${String(durationSeconds).padStart(2, '0')}`;
+
+        draw();
+    }
+
+    // ===== キャンバスリサイズ =====
+    function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+    }
+
+    // ===== アニメーションループ =====
+    function startAnimationLoop() {
+        draw();
+        requestAnimationFrame(startAnimationLoop);
+    }
+
+    // ===== 初期化 =====
+    window.addEventListener('load', init);
+</script>
+</body>
+</html>
